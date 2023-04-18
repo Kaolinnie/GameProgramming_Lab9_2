@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class CatEnemyScript : MonoBehaviour
 {
@@ -10,10 +11,17 @@ public class CatEnemyScript : MonoBehaviour
     public float maxDistance = 2;
     public float timer = 1.0f;
     public float visionCheckRate = 1.0f;
+    
+    public Transform patrolPoints;
+    private int patrolIndex;
+
+    private NavMeshAgent agent;
+
     // Start is called before the first frame update
     void Start()
     {
         player = GameObject.FindGameObjectWithTag("Player");
+        agent = GetComponent<NavMeshAgent>();
     }
 
 
@@ -22,11 +30,26 @@ public class CatEnemyScript : MonoBehaviour
     { 
         if(SeePlayer())
         {
-            // Go to Player
+            agent.Stop();
+            Debug.Log("Cat sees player");
+            var playerPos = player.transform.position;
+            agent.destination = playerPos;
+        } 
+        else if (!agent.pathPending && agent.remainingDistance < 0.5f) {
+            Debug.Log("going to next point");
+            GotoNextPoint();
+        } else {
+            Debug.Log("Going back to patrolling");
+            agent.destination = patrolPoints.GetChild(patrolIndex).position;
         }
-        else {
-            // Patrol
-        }
+    }
+
+    public void GotoNextPoint() {
+        if(patrolPoints.childCount == 0) return;
+
+        agent.destination = patrolPoints.GetChild(patrolIndex).position;
+
+        patrolIndex = (patrolIndex+1)%patrolPoints.childCount;
     }
 
     public bool SeePlayer()
