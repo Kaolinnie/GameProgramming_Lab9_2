@@ -1,10 +1,12 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MovePlayer : MonoBehaviour
 {
-    float speed = 2.0f;
+    float speed = 4f;
     CharacterController cc;
 
     // Start is called before the first frame update

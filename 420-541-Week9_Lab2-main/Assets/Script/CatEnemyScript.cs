@@ -1,19 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Timers;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 public class CatEnemyScript : MonoBehaviour
 {
-       public GameObject player;
+    public GameObject player;
 
     public float maxAngle = 45;
-    public float maxDistance = 2;
-    public float timer = 1.0f;
+    public float maxDistance = 10;
+    public float timer;
     public float visionCheckRate = 1.0f;
     
     public Transform patrolPoints;
     private int patrolIndex;
+    private bool chasing = false;
 
     private NavMeshAgent agent;
 
@@ -26,25 +29,27 @@ public class CatEnemyScript : MonoBehaviour
 
 
     // Update is called once per frame
-    void Update()
-    { 
-        if(SeePlayer())
-        {
-            agent.Stop();
-            Debug.Log("Cat sees player");
-            var playerPos = player.transform.position;
-            agent.destination = playerPos;
+    void Update() {
+        timer -= Time.deltaTime;
+        timer = Mathf.Clamp(timer, 0.0f, 2.0f);
+        if (SeePlayer()) {
+            chasing = true;
+            timer = 2.0f;
+            agent.destination = player.transform.position;
+        }
+        else if (timer > 0) {
+            agent.destination = player.transform.position;
+        }
+        else if (chasing) {
+            chasing = false;
+            agent.destination = patrolPoints.GetChild(patrolIndex).position;
         } 
         else if (!agent.pathPending && agent.remainingDistance < 0.5f) {
-            Debug.Log("going to next point");
             GotoNextPoint();
-        } else {
-            Debug.Log("Going back to patrolling");
-            agent.destination = patrolPoints.GetChild(patrolIndex).position;
-        }
+        } 
     }
 
-    public void GotoNextPoint() {
+    private void GotoNextPoint() {
         if(patrolPoints.childCount == 0) return;
 
         agent.destination = patrolPoints.GetChild(patrolIndex).position;
@@ -52,7 +57,7 @@ public class CatEnemyScript : MonoBehaviour
         patrolIndex = (patrolIndex+1)%patrolPoints.childCount;
     }
 
-    public bool SeePlayer()
+    private bool SeePlayer()
     {
         Vector3 vecPlayerTurret = player.transform.position - transform.position;
         if (vecPlayerTurret.magnitude > maxDistance)
@@ -70,8 +75,9 @@ public class CatEnemyScript : MonoBehaviour
         
             if (Physics.Raycast(ray, out hit))
             {
-                if (hit.collider.tag == "Player")
+                if (hit.collider.CompareTag("Player"))
                 {
+                    // Debug.Log($"cat sees player: {vecPlayerTurret.magnitude}");
                     return true;
                 }
                 
@@ -79,5 +85,12 @@ public class CatEnemyScript : MonoBehaviour
         }
         return false;
        
+    }
+    
+    
+    private void OnCollisionEnter(Collision collision) {
+        if (collision.gameObject.CompareTag("Player")) {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
     }
 }
